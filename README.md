@@ -10,6 +10,31 @@ A Python tool for extracting and archiving Reddit threads with full comment tree
 - **Verbatim Extraction**: Preserves exact text without modification
 - **Flexible Filtering**: Filter responses by specific authors or criteria
 - **Multiple Output Formats**: JSON, Markdown, and plain text output
+- **GUI Application**: Web-based interface with real-time progress tracking
+
+## GUI Application (Recommended)
+
+The easiest way to use this tool is through the web GUI:
+
+```bash
+# Terminal 1: Start the backend
+pip install -r requirements.txt
+python server.py
+
+# Terminal 2: Start the frontend
+cd gui
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173 in your browser.
+
+### GUI Features
+- Paste any Reddit thread URL or submission ID
+- Specify which accounts to capture (one per line)
+- Real-time progress with live comment counts
+- Export to JSON or plain text
+- Copy to clipboard or save to file
 
 ## Installation
 
