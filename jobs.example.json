@@ -1,0 +1,27 @@
+{
+    "jobs": [
+        {
+            "name": "Larian AMA",
+            "description": "Extract Q&A from Larian Studios AMA on r/Games",
+            "submission_id": "1q870w5",
+            "subreddit": "Games",
+            "filter": {
+                "answer_authors": [
+                    "LarSwen",
+                    "Larian_Swen",
+                    "larianstudios"
+                ],
+                "include_deleted": false
+            },
+            "output": {
+                "format": "markdown",
+                "file": "output/larian_ama.md"
+            }
+        }
+    ],
+    "settings": {
+        "rate_limit_delay": 1.0,
+        "max_retries": 3,
+        "expand_all_comments": true
+    }
+}

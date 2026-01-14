@@ -72,6 +72,47 @@ python archiver.py --submission 1q870w5 --format markdown --output results.md
 | `--output` | Output file path (default: stdout) |
 | `--include-deleted` | Include [deleted] comments (default: false) |
 
+### Job Runner (Recommended for Multiple Extractions)
+
+Create a `jobs.json` configuration file:
+
+```json
+{
+    "jobs": [
+        {
+            "name": "Larian AMA",
+            "description": "Extract Q&A from Larian Studios AMA",
+            "submission_id": "1q870w5",
+            "subreddit": "Games",
+            "filter": {
+                "answer_authors": ["LarSwen", "Larian_Swen", "larianstudios"],
+                "include_deleted": false
+            },
+            "output": {
+                "format": "markdown",
+                "file": "output/larian_ama.md"
+            }
+        }
+    ]
+}
+```
+
+Run jobs:
+
+```bash
+# List available jobs
+python job_runner.py --list
+
+# Run all jobs
+python job_runner.py --config jobs.json
+
+# Run a specific job
+python job_runner.py --config jobs.json --job "Larian AMA"
+
+# Dry run (validate without executing)
+python job_runner.py --config jobs.json --dry-run
+```
+
 ### Python API
 
 ```python
