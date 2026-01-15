@@ -51,7 +51,7 @@ interface ExtractionParams {
     usePublicApi: boolean
 }
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = 'http://localhost:8001'
 
 export function useExtraction() {
     const [status, setStatus] = useState<ExtractionStatus>(ExtractionStatus.IDLE)
