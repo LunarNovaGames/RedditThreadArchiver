@@ -42,13 +42,13 @@ export function ExportSection({ result, includeTimestamps, includeCommentIds }: 
             }
             return JSON.stringify(output, null, 2)
         } else {
-            // Plain text format
+            // Plain text format with usernames
             let output = ''
             for (const qa of result.qaPairs) {
-                output += 'Q:\n'
+                output += `Q (u/${qa.question.author}):\n`
                 output += qa.question.body + '\n\n'
                 for (const answer of qa.answers) {
-                    output += 'A:\n'
+                    output += `A (u/${answer.author}):\n`
                     output += answer.body + '\n\n'
                 }
                 output += '\n'
