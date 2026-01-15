@@ -2,6 +2,7 @@
 FastAPI Backend Server for Reddit Thread Archiver GUI.
 
 Provides REST API endpoints for extraction and real-time progress via SSE.
+Supports both authenticated and public API modes.
 """
 
 import asyncio
@@ -15,8 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from config import Config
-from reddit_client import RedditClient
 from models import Submission, Comment, QAPair
 
 
@@ -53,6 +52,7 @@ class ExtractionRequest(BaseModel):
     """Request body for starting extraction."""
     submission_id: str
     accounts: list[str]
+    use_public_api: bool = True  # Default to public API
 
 
 class ExtractionResponse(BaseModel):
@@ -69,6 +69,7 @@ async def start_extraction(request: ExtractionRequest):
         "status": "pending",
         "submission_id": request.submission_id,
         "accounts": request.accounts,
+        "use_public_api": request.use_public_api,
         "progress": {
             "phase": "Initializing...",
             "comments_fetched": 0,
@@ -94,33 +95,69 @@ async def run_extraction(job_id: str):
     
     try:
         job["status"] = "running"
-        
-        # Initialize client
-        job["progress"]["phase"] = "Authenticating..."
-        job["progress"]["percent"] = 5
-        
-        config = Config()
-        client = RedditClient(config)
-        
-        # Authenticate (run in thread pool since it's blocking)
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, client.authenticate)
         
-        job["progress"]["phase"] = "Fetching submission..."
-        job["progress"]["percent"] = 10
-        
-        # Fetch submission
-        submission = await loop.run_in_executor(
-            None,
-            lambda: client.get_submission(job["submission_id"])
-        )
-        
-        job["progress"]["phase"] = "Fetching comments..."
-        job["progress"]["percent"] = 20
-        
-        # Fetch all comments with progress updates
-        comments = await fetch_comments_with_progress(client, job["submission_id"], job)
-        submission.comments = comments
+        if job["use_public_api"]:
+            # Use public API (no auth required)
+            from public_reddit_client import PublicRedditClient
+            
+            job["progress"]["phase"] = "Connecting (Public API)..."
+            job["progress"]["percent"] = 5
+            
+            client = PublicRedditClient()
+            
+            job["progress"]["phase"] = "Fetching submission..."
+            job["progress"]["percent"] = 10
+            
+            submission = await loop.run_in_executor(
+                None,
+                lambda: client.get_submission(job["submission_id"])
+            )
+            
+            job["progress"]["phase"] = "Fetching comments..."
+            job["progress"]["percent"] = 20
+            
+            # Progress callback
+            def update_progress(fetched, remaining):
+                job["progress"]["comments_fetched"] = fetched
+                job["progress"]["expansions_remaining"] = remaining
+            
+            comments = await loop.run_in_executor(
+                None,
+                lambda: client.get_all_comments(job["submission_id"], update_progress)
+            )
+            submission.comments = comments
+            
+        else:
+            # Use authenticated API
+            from config import Config
+            from reddit_client import RedditClient
+            
+            job["progress"]["phase"] = "Authenticating..."
+            job["progress"]["percent"] = 5
+            
+            config = Config()
+            client = RedditClient(config)
+            
+            await loop.run_in_executor(None, client.authenticate)
+            
+            job["progress"]["phase"] = "Fetching submission..."
+            job["progress"]["percent"] = 10
+            
+            submission = await loop.run_in_executor(
+                None,
+                lambda: client.get_submission(job["submission_id"])
+            )
+            
+            job["progress"]["phase"] = "Fetching comments..."
+            job["progress"]["percent"] = 20
+            
+            comments = await loop.run_in_executor(
+                None,
+                lambda: client.get_all_comments(job["submission_id"])
+            )
+            submission.comments = comments
+            job["progress"]["comments_fetched"] = len(comments)
         
         job["progress"]["phase"] = "Filtering Q&A pairs..."
         job["progress"]["percent"] = 90
@@ -136,7 +173,7 @@ async def run_extraction(job_id: str):
         job["result"] = {
             "submission_id": submission.id,
             "submission_title": submission.title,
-            "total_comments": len(comments),
+            "total_comments": len(submission.comments),
             "qa_pairs": [
                 {
                     "question": {
@@ -166,26 +203,6 @@ async def run_extraction(job_id: str):
     except Exception as e:
         job["status"] = "error"
         job["error"] = str(e)
-
-
-async def fetch_comments_with_progress(
-    client: RedditClient,
-    submission_id: str,
-    job: dict
-) -> list[Comment]:
-    """Fetch comments with progress updates."""
-    loop = asyncio.get_event_loop()
-    
-    # This is a simplified version - in production, you'd want to 
-    # hook into the client's progress callbacks
-    comments = await loop.run_in_executor(
-        None,
-        lambda: client.get_all_comments(submission_id)
-    )
-    
-    job["progress"]["comments_fetched"] = len(comments)
-    
-    return comments
 
 
 def extract_qa_pairs(submission: Submission, accounts: list[str]) -> list[QAPair]:

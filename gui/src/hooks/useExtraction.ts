@@ -48,6 +48,7 @@ interface ExtractionParams {
     accounts: string[]
     includeTimestamps: boolean
     includeCommentIds: boolean
+    usePublicApi: boolean
 }
 
 const API_BASE = 'http://localhost:8000'
@@ -106,7 +107,8 @@ export function useExtraction() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     submission_id: submissionId,
-                    accounts: params.accounts
+                    accounts: params.accounts,
+                    use_public_api: params.usePublicApi
                 })
             })
 

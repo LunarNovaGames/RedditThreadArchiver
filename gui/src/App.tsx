@@ -11,6 +11,7 @@ function App() {
   const [accounts, setAccounts] = useState('')
   const [includeTimestamps, setIncludeTimestamps] = useState(false)
   const [includeCommentIds, setIncludeCommentIds] = useState(false)
+  const [usePublicApi, setUsePublicApi] = useState(true)
 
   const {
     status,
@@ -31,9 +32,10 @@ function App() {
       threadUrl,
       accounts: accountList,
       includeTimestamps,
-      includeCommentIds
+      includeCommentIds,
+      usePublicApi
     })
-  }, [threadUrl, accounts, includeTimestamps, includeCommentIds, startExtraction])
+  }, [threadUrl, accounts, includeTimestamps, includeCommentIds, usePublicApi, startExtraction])
 
   const isIdle = status === ExtractionStatus.IDLE
   const isRunning = status === ExtractionStatus.RUNNING
@@ -82,6 +84,26 @@ function App() {
               Include comment IDs
             </label>
           </div>
+
+          <div className="api-toggle">
+            <span className={`toggle-label ${usePublicApi ? 'active' : ''}`}>Public API</span>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={!usePublicApi}
+                onChange={e => setUsePublicApi(!e.target.checked)}
+                disabled={isRunning}
+              />
+              <span className="toggle-slider"></span>
+            </label>
+            <span className={`toggle-label ${!usePublicApi ? 'active' : ''}`}>Authenticated</span>
+          </div>
+          {usePublicApi && (
+            <p className="api-note">✓ No credentials required. Some deeply nested comments may be missed.</p>
+          )}
+          {!usePublicApi && (
+            <p className="api-note">⚠ Requires Reddit API credentials in .env file.</p>
+          )}
 
           <button
             className="start-button"
